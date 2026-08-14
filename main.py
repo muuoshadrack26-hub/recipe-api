@@ -1,10 +1,9 @@
 import secrets
 from datetime import datetime
-
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import select
-
+from sqlalchemy import func
 from database import lifespan,SessionDep
 from schema import CreateUser,UpdateUser,CreateRecipe,UpdateRecipe
 from model import User,Recipe
@@ -90,17 +89,20 @@ async def create_recipes(new_recipe:CreateRecipe,session:SessionDep,current_user
     session.add(recipe)
     session.commit()
     session.refresh(recipe)
-
     return {"new_recipe":recipe}
 
 @app.get("/recipe/{recipe_id}")
-async def get_recipe(recipe_id:int,session:SessionDep,current_user:User=Depends(get_current_user)):
-    recipe=session.get(Recipe,recipe_id)
-
-    if recipe is None or recipe.owner_id!=current_user.user_id:
+async def get_recipe(recipe__id:int,session:SessionDep,current_user:User=Depends(get_current_user)):
+    recipe=session.get(Recipe,recipe__id)
+    print("Recipe owner:", recipe.owner_id)
+    print("Current user:", current_user.user_id)
+    if recipe.owner_id != current_user.user_id:
+        raise HTTPException(status_code=401,detail="unauthorized")
+    if recipe is None:
         raise HTTPException(status_code=404,detail="recipe not found")
 
     return {"recipe":recipe}
+
 
 @app.put("/recipe/{recipe_id}")
 async def update_recipe(recipe_id:int,updated:UpdateRecipe,session:SessionDep,current_user:User=Depends(get_current_user)):

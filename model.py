@@ -18,7 +18,7 @@ class Recipe(SQLModel,table=True):
     instructions:str
     cook_time:str
     category:str
-    owner_id:str
+    owner_id:int
     created_at:datetime
 
 
